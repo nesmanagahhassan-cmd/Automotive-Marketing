@@ -1,45 +1,33 @@
-const cacheName = 'car-hub-v1';
-const staticAssets = [
+const CACHE_NAME = 'car-hub-egp-v1';
+
+// الملفات الأساسية للتخزين
+const assets = [
   './',
   './index.html',
   'https://cdn.tailwindcss.com'
 ];
 
-self.addEventListener('install', async e => {
-  const cache = await caches.open(cacheName);
-  await cache.addAll(staticAssets);
-  return self.skipWaiting();
+// عند التثبيت
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(assets);
+    })
+  );
 });
 
-self.addEventListener('activate', e => {
-  self.clients.claim();
+// عند طلب أي ملف (هنا يكمن حل مشكلة البيانات)
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    fetch(event.request)
+      .then((res) => {
+        // إذا نجح الاتصال بالإنترنت، اعرض البيانات وحدث الكاش
+        const resClone = res.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, resClone);
+        });
+        return res;
+      })
+      .catch(() => caches.match(event.request)) // إذا فشل الإنترنت، استخدم الكاش
+  );
 });
-
-self.addEventListener('fetch', async e => {
-  const req = e.request;
-  const url = new URL(req.url);
-
-  if (url.origin === location.origin) {
-    e.respondWith(cacheFirst(req));
-  } else {
-    e.respondWith(networkAndCache(req));
-  }
-});
-
-async function cacheFirst(req) {
-    const cache = await caches.open(cacheName);
-    const cached = await cache.match(req);
-    return cached || fetch(req);
-}
-
-async function networkAndCache(req) {
-    const cache = await caches.open(cacheName);
-    try {
-        const fresh = await fetch(req);
-        await cache.put(req, fresh.clone());
-        return fresh;
-    } catch (e) {
-        const cached = await cache.match(req);
-        return cached;
-    }
-}
