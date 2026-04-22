@@ -462,6 +462,45 @@
             document.body.style.overflow = 'auto';
         };
 
+        // كود جلب البيانات مع حماية من أخطاء المتصفحات
+        async function safeLoadData() {
+            try {
+                // جلب الفئات
+                onSnapshot(collection(db, "categories"), (snapshot) => {
+                    const sideCats = document.getElementById('dynamicCatsSide');
+                    const adminList = document.getElementById('adminCategoriesList');
+
+                    if (sideCats) {
+                        sideCats.innerHTML = snapshot.docs.map(doc => {
+                            const cat = doc.data();
+                            return `<button onclick="window.filterFromMenu('${cat.name}')" class="text-right text-white text-lg py-3 px-4 hover:bg-yellow-500/20 hover:text-yellow-400 rounded-xl border-b border-white/5">${cat.name}</button>`;
+                        }).join('');
+                    }
+
+                    if (adminList) {
+                        adminList.innerHTML = snapshot.docs.map(doc => {
+                            const cat = doc.data();
+                            return `<div class="flex justify-between items-center bg-white/5 p-3 rounded-xl mb-2"><span>${cat.name}</span><button onclick="window.deleteCategory('${doc.id}')" class="text-red-500"><i class="fas fa-trash"></i></button></div>`;
+                        }).join('');
+                    }
+                });
+
+                // جلب السيارات
+                onSnapshot(collection(db, "cars"), (snapshot) => {
+                    allCars = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    if (typeof renderCars === "function") renderCars(allCars);
+                });
+
+            } catch (error) {
+                console.error("Browser Compatibility Error:", error);
+                // رسالة تنبيه للمستخدم إذا كان المتصفح قديماً جداً
+                // alert("يرجى استخدام متصفح حديث لرؤية كافة البيانات");
+            }
+        }
+
+        // تشغيل الدالة
+        safeLoadData();
+
         const provider = new GoogleAuthProvider();
 
         // عناصر الواجهة
