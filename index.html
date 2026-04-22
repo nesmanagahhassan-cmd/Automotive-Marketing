@@ -17,12 +17,21 @@
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/741/741407.png">
 
     <script>
-        // تسجيل الـ Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('تم تسجيل التطبيق بنجاح'))
-                    .catch(err => console.log('فشل تسجيل التطبيق', err));
+                // إضافة ?v=1 لإجبار المتصفح على تحديث الملف
+                navigator.serviceWorker.register('sw.js?v=2')
+                    .then(reg => {
+                        // تحديث فوري إذا وجد نسخة جديدة
+                        reg.onupdatefound = () => {
+                            const installingWorker = reg.installing;
+                            installingWorker.onstatechange = () => {
+                                if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    window.location.reload();
+                                }
+                            };
+                        };
+                    });
             });
         }
     </script>
@@ -730,7 +739,7 @@
                         <h3 class="text-xl font-bold">${car.title}</h3>
                         <span class="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded">${car.sellerType}</span>
                     </div>
-                    <p class="text-yellow-400 font-bold text-2xl mt-2">${car.price} ريال</p>
+                    <p class="text-yellow-400 font-bold text-2xl mt-2">${car.price} جنيه مصري</p>
                     <div class="flex justify-between text-sm text-gray-400 mt-4 pt-4 border-t border-white/10">
                         <span><i class="fas fa-calendar-alt ml-1"></i> ${car.year}</span>
                         <span><i class="fas fa-map-marker-alt ml-1"></i> ${car.location}</span>
@@ -833,7 +842,7 @@
                 </div>
                 <div class="flex flex-col justify-center">
                     <h2 class="text-4xl font-bold mb-4">${currentCar.title}</h2>
-                    <p class="text-3xl text-yellow-500 font-bold mb-6">${currentCar.price} ريال</p>
+                    <p class="text-3xl text-yellow-500 font-bold mb-6">${currentCar.price} ج.م</p>
                     <div class="grid grid-cols-2 gap-4 text-gray-300 mb-8">
                         <div class="bg-white/5 p-3 rounded-lg">📍 الموقع: ${currentCar.location}</div>
                         <div class="bg-white/5 p-3 rounded-lg">📅 الموديل: ${currentCar.year}</div>
@@ -855,6 +864,7 @@
             const phone = document.getElementById('custPhone').value;
             const gov = document.getElementById('custGov').value;
             const address = document.getElementById('custAddress').value;
+            const msg = `*فاتورة طلب جديدة*%0A-----------------%0A*السيارة:* ${currentCar.title}%0A*السعر:* ${currentCar.price} جنيه مصري`;
 
             const text = `*طلب شراء سيارة جديد*%0A` +
                 `--------------------------%0A` +
