@@ -1,38 +1,56 @@
+--- START OF FILE Paste April 22, 2026 - 10:30AM ---
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سوق السيارات الاحترافي</title>
-    <!-- Tailwind CSS for styling -->
+    <title>سوق السيارات الاحترافي - لوحة الإدارة</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#eab308">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/741/741407.png">
+
+    <script>
+        // تسجيل الـ Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('تم تسجيل التطبيق بنجاح'))
+                    .catch(err => console.log('فشل تسجيل التطبيق', err));
+            });
+        }
+    </script>
 
     <style>
         body {
             font-family: 'Cairo', sans-serif;
-            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
-            background-attachment: fixed;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
             min-height: 100vh;
             color: white;
         }
 
-        /* Glassmorphism Effect */
+        .glass {
+            background: rgba(15, 23, 42, 0.95) !important;
+            /* خلفية داكنة لضمان وضوح القائمة */
+            backdrop-filter: blur(10px);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
         .glass-card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 20px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
         }
 
         .nav-glass {
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(15, 23, 42, 0.8);
             backdrop-filter: blur(10px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
@@ -43,21 +61,67 @@
             border-radius: 15px;
         }
 
-        /* Smooth animation */
-        .fade-in {
-            animation: fadeIn 0.8s ease-in;
+        .car-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
         }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
+        .car-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
+            border-color: #eab308;
+        }
 
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .admin-only {
+            display: none;
+        }
+
+        .admin-mode .admin-only {
+            display: block;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #eab308;
+            border-radius: 10px;
+        }
+
+        /* تحسين شكل شريط التمرير داخل القائمة الجانبية */
+        #sideMenuContainer::-webkit-scrollbar {
+            width: 4px;
+            scrollbar-width: thin;
+            scrollbar-color: #eab308 rgba(255, 255, 255, 0.05);
+            /* عرض السكرول */
+        }
+
+        #sideMenuContainer::-webkit-scrollbar-track {
+            width: 5px;
+            background: rgba(255, 255, 255, 0.05);
+            /* لون الخلفية */
+        }
+
+        #sideMenuContainer::-webkit-scrollbar-thumb {
+            background: #eab308;
+            /* لون المقبض (أصفر) */
+            border-radius: 10px;
+        }
+
+        /* تأثير عند تمرير الماوس على أزرار التصنيفات */
+        #sideCatsList button:hover {
+            padding-right: 25px;
+            /* حركة بسيطة لليسار عند التحويم */
+        }
+
+        #sideMenu {
+            transition: transform 0.4s ease-in-out;
+            transform: translateX(100%);
+        }
+
+        #sideMenu.open {
+            transform: translateX(0);
         }
     </style>
 </head>
@@ -65,132 +129,770 @@
 <body class="pb-20">
 
     <!-- Navbar -->
-    <nav class="nav-glass sticky top-0 z-50 p-4 flex justify-between items-center px-6">
-        <h1 class="text-2xl font-bold tracking-wider">سيارتي <span class="text-yellow-400">Hub</span></h1>
-        <div class="flex gap-4">
-            <button id="loginBtn" class="glass-card px-4 py-2 text-sm">تسجيل دخول</button>
-            <i class="fas fa-bars text-2xl cursor-pointer"></i>
+    <nav class="glass sticky top-0 z-[100] p-4 flex justify-between items-center px-6">
+        <h1 class="text-2xl font-bold text-yellow-400">سيارتي <span class="text-white">Hub</span></h1>
+
+        <div class="flex gap-4 items-center">
+            <!-- زر تسجيل الدخول -->
+            <button id="authBtn" class="glass px-4 py-2 rounded-lg text-sm border border-yellow-500/50">تسجيل
+                الدخول</button>
+
+            <!-- أيقونة القائمة الجانبية الواحدة فقط -->
+            <div id="menuToggleBtn" class="p-2 cursor-pointer z-[110] relative">
+                <i class="fas fa-bars text-2xl text-white"></i>
+            </div>
         </div>
     </nav>
 
-    <!-- Header Section -->
-    <header class="p-6 text-center mt-6 fade-in">
-        <h2 class="text-3xl font-bold mb-2">ابحث عن سيارة أحلامك</h2>
-        <p class="text-gray-200">من المعارض مباشرة أو من الملاك الأفراد</p>
+    <!-- القائمة الجانبية (واحدة فقط ومنظمة) -->
+    <!-- القائمة الجانبية -->
+    <div id="sideMenuContainer"
+        class="fixed top-0 right-0 h-full w-72 bg-[#0f172a] z-[200] p-6 shadow-2xl transition-transform duration-300 translate-x-full border-l border-white/10 overflow-y-auto">
 
+        <div class="flex justify-between items-center mb-10 border-b border-white/10 pb-4 text-white">
+            <h3 class="text-xl font-bold">القائمة</h3>
+            <button id="closeMenuBtn" class="text-3xl">&times;</button>
+        </div>
+
+        <!-- حاوية التصنيفات -->
+        <div id="sideCatsList" class="flex flex-col gap-2">
+            <!-- زر "الكل" دائماً في البداية -->
+            <button onclick="window.filterFromMenu('الكل')"
+                class="text-right text-white text-lg py-3 px-4 hover:bg-yellow-500 hover:text-black rounded-xl transition-all mb-1 font-bold">
+                <i class="fas fa-border-all ml-2"></i> الكل
+            </button>
+
+            <!-- هنا ستظهر الفئات من قاعدة البيانات -->
+            <div id="dynamicCatsSide"></div>
+        </div>
+
+        <!-- قسم الإدارة في أسفل القائمة -->
+        <div class="mt-8 pt-8 border-t border-white/10 pb-10">
+            <p class="text-gray-500 text-xs mb-4 text-right px-2">إعدادات النظام</p>
+
+            <!-- زر لوحة التحكم الذي يطلب الباسورد -->
+            <button onclick="window.accessAdminDashboard()"
+                class="w-full bg-yellow-500 text-black p-4 rounded-2xl font-bold shadow-lg hover:scale-105 transition-transform flex items-center justify-center gap-2">
+                <i class="fas fa-lock text-sm"></i>
+                لوحة التحكم
+            </button>
+            <button onclick="window.openAddCarModal()" class="w-full bg-blue-600 text-white p-3 rounded-xl font-bold">
+                <i class="fas fa-plus ml-2"></i> إضافة سيارة
+            </button>
+        </div>
+    </div>
+
+    <!-- خلفية التظليل -->
+    <div id="menuOverlay" class="fixed inset-0 bg-black/70 z-[150] hidden backdrop-blur-sm"></div>
+
+    <!-- مودال تسجيل الدخول (Google + Admin) -->
+    <div id="loginModal"
+        class="fixed inset-0 z-[250] hidden bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass w-full max-w-sm p-8 rounded-3xl text-center border border-white/20">
+            <h2 class="text-2xl font-bold mb-6 text-white">دخول النظام</h2>
+            <button id="googleBtn"
+                class="w-full bg-white text-black py-3 rounded-xl mb-4 font-bold flex items-center justify-center gap-2">
+                <img src="https://www.svgrepo.com/show/355037/google.svg" class="w-5"> الدخول بواسطة جوجل
+            </button>
+            <div class="relative my-6 text-gray-500 text-sm">
+                <hr class="border-white/10">
+                <span class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#0f172a] px-2">أو
+                    كمسؤول</span>
+            </div>
+            <div class="space-y-3">
+                <input type="email" id="adminEmail" placeholder="البريد الإلكتروني"
+                    class="w-full p-3 bg-white/5 border border-white/20 rounded-xl text-white outline-none focus:border-yellow-500">
+                <input type="password" id="adminPass" placeholder="كلمة المرور"
+                    class="w-full p-3 bg-white/5 border border-white/20 rounded-xl text-white outline-none focus:border-yellow-500">
+                <button id="emailLoginBtn" class="w-full bg-yellow-500 text-black py-3 rounded-xl font-bold">دخول
+                    المسؤول</button>
+            </div>
+            <button id="closeLogin" class="mt-6 text-gray-400 underline text-sm">إلغاء</button>
+        </div>
+    </div>
+
+    <!-- لوحة التحكم (Dashboard) -->
+    <div id="dashboardModal" class="fixed inset-0 z-[110] hidden bg-black/95 backdrop-blur-xl overflow-y-auto p-4">
+        <div class="max-w-6xl mx-auto my-10">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-3xl font-bold text-yellow-400"><i class="fas fa-chart-line ml-3"></i>لوحة تحكم النظام
+                </h2>
+                <button onclick="toggleDashboard()" class="bg-red-500 px-4 py-2 rounded-lg">إغلاق</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- قسم الإعدادات -->
+                <div class="glass-card p-6">
+                    <h3 class="text-xl font-bold mb-4 border-b border-white/10 pb-2 text-yellow-400">إعدادات التواصل
+                    </h3>
+                    <label class="block text-sm mb-2">رقم واتساب الطلبات (بالكود الدولي):</label>
+                    <input type="text" id="adminWhatsappInput" placeholder="مثال: 201012345678"
+                        class="w-full p-3 bg-white/5 border border-white/20 rounded-lg mb-4 text-white">
+                    <button onclick="saveSettings()" class="w-full bg-green-600 py-3 rounded-lg font-bold">حفظ
+                        الرقم</button>
+                </div>
+
+                <!-- قسم الفئات -->
+                <div class="glass-card p-6">
+                    <h3 class="text-xl font-bold mb-4 border-b border-white/10 pb-2 text-yellow-400">إدارة الفئات</h3>
+                    <h3 class="text-xl font-bold mb-4 text-yellow-400">إدارة الفئات الحالية</h3>
+                    <!-- هذا هو العنصر المهم الذي يجب أن يتطابق الـ ID الخاص به -->
+                    <div id="adminCategoriesList" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
+                        <p class="text-gray-500 text-sm">جاري تحميل الفئات...</p>
+                    </div>
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="newCatName" placeholder="فئة جديدة"
+                            class="flex-1 p-2 bg-white/5 border border-white/20 rounded-lg text-white">
+                        <button onclick="addCategory()"
+                            class="bg-yellow-500 text-black px-4 rounded-lg font-bold">+</button>
+                    </div>
+                    <div id="adminCategoriesList" class="space-y-2 max-h-40 overflow-y-auto"></div>
+                </div>
+
+                <!-- إحصائيات سريعة -->
+                <div class="glass-card p-6 text-center">
+                    <h3 class="text-xl font-bold mb-4 border-b border-white/10 pb-2 text-yellow-400">حالة المتجر</h3>
+                    <p class="text-4xl font-bold mb-2" id="totalCarsCount">0</p>
+                    <p class="text-gray-400">سيارة معروضة حالياً</p>
+                </div>
+            </div>
+
+            <!-- إدارة السيارات -->
+            <div class="glass-card p-6 mt-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-yellow-400">قائمة إدارة السيارات</h3>
+                    <button onclick="openAddCarModal()" class="bg-blue-600 px-6 py-2 rounded-lg text-sm font-bold">+
+                        إضافة سيارة جديدة</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right border-collapse">
+                        <thead>
+                            <tr class="border-b border-white/10 text-gray-400">
+                                <th class="p-4 text-sm">الصورة</th>
+                                <th class="p-4 text-sm">اسم السيارة</th>
+                                <th class="p-4 text-sm">السعر</th>
+                                <th class="p-4 text-sm">الفئة</th>
+                                <th class="p-4 text-sm">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminCarsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة تفاصيل المنتج والسلة -->
+    <div id="productDetailsModal" class="fixed inset-0 z-[80] hidden overflow-y-auto bg-black/90 backdrop-blur-md p-4">
+        <div class="glass-card max-w-4xl mx-auto my-10 p-6 relative">
+            <button onclick="closeDetails()" class="absolute top-4 left-4 text-3xl">&times;</button>
+            <div id="detailsContent" class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10"></div>
+        </div>
+    </div>
+
+    <!-- مودال إتمام الطلب (السلة) -->
+    <div id="cartModal" class="fixed inset-0 z-[90] hidden bg-black/80 flex items-center justify-center p-4">
+        <div class="glass-card w-full max-w-md p-6">
+            <h2 class="text-2xl font-bold mb-6 text-yellow-400 border-b border-white/10 pb-2">بيانات تأكيد الطلب</h2>
+            <form id="orderForm" class="space-y-4">
+                <input type="text" id="custName" placeholder="الاسم بالكامل"
+                    class="w-full p-3 bg-white/5 border border-white/20 rounded-xl text-white outline-none focus:border-yellow-400"
+                    required>
+                <input type="tel" id="custPhone" placeholder="رقم الهاتف"
+                    class="w-full p-3 bg-white/5 border border-white/20 rounded-xl text-white outline-none focus:border-yellow-400"
+                    required>
+                <select id="custGov" class="w-full p-3 bg-slate-800 border border-white/20 rounded-xl text-white"
+                    required>
+                    <option value="">اختر المحافظة</option>
+                    <option>القاهرة</option>
+                    <option>الجيزة</option>
+                    <option>الإسكندرية</option>
+                    <option>الرياض</option>
+                    <option>جدة</option>
+                    <option>دبي</option>
+                </select>
+                <textarea id="custAddress" placeholder="العنوان بالتفصيل"
+                    class="w-full p-3 bg-white/5 border border-white/20 rounded-xl text-white h-24 outline-none focus:border-yellow-400"></textarea>
+                <div class="flex gap-2">
+                    <button type="button" onclick="closeCart()"
+                        class="flex-1 bg-gray-600 text-white py-3 rounded-xl font-bold">إلغاء</button>
+                    <button type="submit"
+                        class="flex-[2] bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition-all">تأكيد
+                        وإرسال واتساب</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="p-6 text-center mt-6">
+        <h2 class="text-3xl font-bold mb-2">تصفح أفضل السيارات</h2>
         <div class="mt-6 flex max-w-md mx-auto">
-            <input type="text" placeholder="ماركة السيارة، الموديل..."
-                class="glass-card w-full p-4 outline-none text-white placeholder-gray-300">
-            <button
-                class="bg-yellow-500 text-black px-6 rounded-l-20 py-4 -mr-2 font-bold rounded-xl shadow-lg">بحث</button>
+            <input type="text" id="mainSearch" placeholder="بحث عن ماركة أو موديل..."
+                class="glass-card w-full p-4 outline-none text-white placeholder-gray-400 border-none ring-1 ring-white/20 focus:ring-yellow-500">
         </div>
     </header>
 
     <!-- Categories -->
-    <div class="flex gap-4 overflow-x-auto p-6 no-scrollbar">
-        <div class="glass-card flex-shrink-0 px-6 py-3 flex items-center gap-2">
-            <i class="fas fa-car"></i> سيدان
-        </div>
-        <div class="glass-card flex-shrink-0 px-6 py-3 flex items-center gap-2">
-            <i class="fas fa-truck-pickup"></i> دفع رباعي
-        </div>
-        <div class="glass-card flex-shrink-0 px-6 py-3 flex items-center gap-2">
-            <i class="fas fa-bolt"></i> كهربائية
-        </div>
-        <div class="glass-card flex-shrink-0 px-6 py-3 flex items-center gap-2">
-            <i class="fas fa-store"></i> المعارض
-        </div>
-    </div>
+    <div id="categoriesContainer" class="flex gap-4 overflow-x-auto p-6 no-scrollbar"></div>
 
-    <!-- Car Listings Grid -->
-    <main class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Listings Grid -->
+    <main id="mainGrid" class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></main>
 
-        <!-- Car Card Example -->
-        <div class="glass-card p-4 fade-in">
-            <img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=80"
-                alt="Car" class="car-image w-full mb-4">
-            <div class="flex justify-between items-start mb-2">
-                <h3 class="text-xl font-bold">بورش 911 كاريرا</h3>
-                <span class="bg-green-500 text-xs px-2 py-1 rounded">معرض</span>
-            </div>
-            <p class="text-yellow-400 font-bold text-lg mb-4">450,000 ريال</p>
-            <div class="flex justify-between text-sm text-gray-300 border-t border-white/10 pt-4">
-                <span><i class="fas fa-tachometer-alt ml-1"></i> 15,000 كم</span>
-                <span><i class="fas fa-calendar-alt ml-1"></i> 2023</span>
-                <span><i class="fas fa-map-marker-alt ml-1"></i> الرياض</span>
-            </div>
-            <button class="w-full mt-4 bg-white/20 hover:bg-white/30 py-3 rounded-xl transition">تفاصيل السيارة</button>
-        </div>
-
-        <!-- Car Card Example 2 (From Individual) -->
-        <div class="glass-card p-4 fade-in">
-            <img src="https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=800&q=80"
-                alt="Car" class="car-image w-full mb-4">
-            <div class="flex justify-between items-start mb-2">
-                <h3 class="text-xl font-bold">بي ام دبليو M4</h3>
-                <span class="bg-blue-500 text-xs px-2 py-1 rounded">فرد</span>
-            </div>
-            <p class="text-yellow-400 font-bold text-lg mb-4">320,000 ريال</p>
-            <div class="flex justify-between text-sm text-gray-300 border-t border-white/10 pt-4">
-                <span><i class="fas fa-tachometer-alt ml-1"></i> 40,000 كم</span>
-                <span><i class="fas fa-calendar-alt ml-1"></i> 2021</span>
-                <span><i class="fas fa-map-marker-alt ml-1"></i> جدة</span>
-            </div>
-            <button class="w-full mt-4 bg-white/20 hover:bg-white/30 py-3 rounded-xl transition">تفاصيل السيارة</button>
-        </div>
-
-    </main>
-
-    <!-- Floating Action Button to Add Car -->
-    <div class="fixed bottom-6 left-6">
-        <button
-            class="bg-yellow-500 text-black w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-2xl font-bold hover:scale-110 transition">
+    <!-- زر الإضافة العائم (يظهر للأدمن فقط) -->
+    <div class="fixed bottom-6 right-6 admin-only">
+        <button onclick="openAddCarModal()"
+            class="bg-yellow-500 text-black w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-2xl font-bold hover:scale-110 transition-all">
             <i class="fas fa-plus"></i>
         </button>
     </div>
 
-    <!-- Firebase Configuration & Scripts -->
-    <script type="module">
-        // استيراد Firebase SDK
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    <!-- مودال إضافة/تعديل سيارة -->
+    <!-- مودال إضافة/تعديل سيارة -->
+    <div id="carModal"
+        class="fixed inset-0 z-[120] hidden bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass w-full max-w-2xl p-8 rounded-3xl max-h-[90vh] overflow-y-auto text-white">
+            <h2 id="modalTitle" class="text-2xl font-bold mb-6 text-yellow-400">إضافة سيارة جديدة</h2>
 
-        // إعدادات الفايربيس الخاصة بك (ضع الكود الخاص بك هنا)
+            <form id="carForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- الحقل المخفي - تأكد أن الـ ID هو editId -->
+                <input type="hidden" id="editId">
+
+                <input type="text" id="title" placeholder="اسم السيارة"
+                    class="md:col-span-2 p-3 bg-white/5 border border-white/20 rounded-xl text-white outline-none focus:border-yellow-400"
+                    required>
+                <input type="number" id="price" placeholder="السعر"
+                    class="p-3 bg-white/5 border border-white/20 rounded-xl text-white outline-none focus:border-yellow-400"
+                    required>
+                <input type="number" id="year" placeholder="الموديل (السنة)"
+                    class="p-3 bg-white/5 border border-white/20 rounded-xl text-white outline-none focus:border-yellow-400"
+                    required>
+                <input type="text" id="km" placeholder="الممشى (كم)"
+                    class="p-3 bg-white/5 border border-white/20 rounded-xl text-white outline-none focus:border-yellow-400">
+                <input type="text" id="loc" placeholder="المدينة"
+                    class="p-3 bg-white/5 border border-white/20 rounded-xl text-white outline-none focus:border-yellow-400"
+                    required>
+
+                <!-- قائمة الفئات -->
+                <select id="cat"
+                    class="p-3 bg-slate-800 border border-white/20 rounded-xl text-white outline-none focus:border-yellow-400"></select>
+
+                <select id="sellerType"
+                    class="p-3 bg-slate-800 border border-white/20 rounded-xl text-white outline-none focus:border-yellow-400">
+                    <option value="معرض">معرض</option>
+                    <option value="فرد">فرد</option>
+                </select>
+
+                <input type="url" id="img" placeholder="رابط صورة السيارة"
+                    class="md:col-span-2 p-3 bg-white/5 border border-white/20 rounded-xl text-white outline-none focus:border-yellow-400"
+                    required>
+
+                <div class="md:col-span-2 flex gap-2 mt-4">
+                    <button type="button" onclick="document.getElementById('carModal').classList.add('hidden')"
+                        class="flex-1 bg-red-600 py-3 rounded-xl font-bold">إلغاء</button>
+                    <button type="submit" class="flex-[2] bg-yellow-500 text-black py-3 rounded-xl font-bold">حفظ
+                        البيانات</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
         const firebaseConfig = {
             apiKey: "AIzaSyCH5CGwzn10Hlv3-5YO5gFuyQbdD5NzGow",
             authDomain: "automotive-marketing.firebaseapp.com",
             projectId: "automotive-marketing",
             storageBucket: "automotive-marketing.firebasestorage.app",
             messagingSenderId: "1094714450796",
-            appId: "1:1094714450796:web:4788f4ba4f4ac0a296c949",
-            measurementId: "G-813FTXC029"
+            appId: "1:1094714450796:web:4788f4ba4f4ac0a296c949"
         };
 
-        // تهيئة الفايربيس
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        console.log("Firebase Connected Successfully");
+        let allCars = [];
+        let categories = [];
+        let currentCar = null;
+        let adminWhatsapp = "201111111111";
+        const ADMIN_EMAIL = "m.salah@gmail.com";
 
-        // مثال لوظيفة جلب البيانات من الفايربيس
-        async function loadCars() {
-            // كود جلب السيارات من Firestore
-        }
-    </script>
+        // --- برمجة القائمة الجانبية ---
 
-    <!-- Service Worker for PWA -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').then(reg => {
-                    console.log('Service Worker Registered');
-                }).catch(err => {
-                    console.log('Service Worker Registration Failed', err);
-                });
+        const menuBtn = document.getElementById('menuToggleBtn');
+        const sideMenu = document.getElementById('sideMenuContainer');
+        const closeBtn = document.getElementById('closeMenuBtn');
+        const menuOverlay = document.getElementById('menuOverlay');
+
+        // وظيفة فتح القائمة
+        const openMenu = () => {
+            sideMenu.style.transform = "translateX(0)";
+            overlay.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // يمنع سكرول الموقع نفسه وليس القائمة
+        };
+
+        // وظيفة إغلاق القائمة
+        const closeMenu = () => {
+            sideMenu.style.transform = "translateX(100%)";
+            overlay.classList.add('hidden');
+            document.body.style.overflow = 'auto'; // يعيد سكرول الموقع عند الإغلاق
+        };
+
+        // ربط الأزرار بالأحداث (هنا نستخدم addEventListener لضمان الاستجابة)
+        if (menuBtn) menuBtn.addEventListener('click', openMenu);
+        if (closeBtn) closeBtn.addEventListener('click', closeMenu);
+        if (menuOverlay) menuOverlay.addEventListener('click', closeMenu);
+
+        // وظيفة الفلترة من القائمة (لكي تعمل عند الضغط على تصنيف)
+        // 3. دالة الفلترة من القائمة
+        window.filterFromMenu = (category) => {
+            if (typeof window.filterCars === "function") {
+                window.filterCars(category);
+            }
+            // إغلاق القائمة بعد اختيار التصنيف
+            const sideMenu = document.getElementById('sideMenuContainer');
+            const overlay = document.getElementById('menuOverlay');
+            sideMenu.style.transform = "translateX(100%)";
+            overlay.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        };
+
+        const provider = new GoogleAuthProvider();
+
+        // عناصر الواجهة
+        const authBtn = document.getElementById('authBtn');
+        const loginModal = document.getElementById('loginModal');
+        const googleBtn = document.getElementById('googleBtn');
+        const emailLoginBtn = document.getElementById('emailLoginBtn');
+        const closeLogin = document.getElementById('closeLogin');
+
+        // 1. فتح وإغلاق المودال
+        authBtn.addEventListener('click', () => {
+            // إذا كان المستخدم مسجل دخوله بالفعل، اجعل الزر يسجل الخروج
+            if (auth.currentUser) {
+                signOut(auth).then(() => alert("تم تسجيل الخروج"));
+            } else {
+                loginModal.classList.remove('hidden');
+            }
+        });
+
+        closeLogin.onclick = () => loginModal.classList.add('hidden');
+
+        // 2. تسجيل الدخول بجوجل
+        googleBtn.onclick = async () => {
+            try {
+                await signInWithPopup(auth, provider);
+                loginModal.classList.add('hidden');
+                alert("تم الدخول بنجاح بواسطة جوجل");
+            } catch (error) {
+                alert("خطأ في دخول جوجل: " + error.message);
+            }
+        };
+
+        // 3. تسجيل الدخول بالبريد (Admin)
+        emailLoginBtn.onclick = async () => {
+            const email = document.getElementById('adminEmail').value;
+            const pass = document.getElementById('adminPass').value;
+
+            if (!email || !pass) return alert("يرجى ملء البيانات");
+
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+                loginModal.classList.add('hidden');
+                alert("أهلاً بك أيها المسؤول");
+            } catch (error) {
+                alert("خطأ في بيانات الإدارة: " + error.message);
+            }
+        };
+
+        // 4. مراقبة حالة المستخدم (تحديث نص الزر تلقائياً)
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                authBtn.innerText = "تسجيل الخروج (" + (user.displayName || "أدمن") + ")";
+                authBtn.classList.add('border-red-500'); // تغيير اللون للتنبيه
+
+                // إذا كان الإيميل هو إيميل الأدمن الخاص بك
+                if (user.email === "m.salah@gmail.com") {
+                    document.body.classList.add('is-admin'); // تفعيل خصائص الأدمن في CSS
+                    isAdmin = true;
+                }
+            } else {
+                authBtn.innerText = "تسجيل الدخول";
+                authBtn.classList.remove('border-red-500');
+                document.body.classList.remove('is-admin');
+                isAdmin = false;
+            }
+        });
+
+        // --- دوال التحميل الأساسية ---
+
+        onSnapshot(collection(db, "settings"), (snapshot) => {
+            snapshot.forEach(doc => {
+                if (doc.id === "contact") {
+                    adminWhatsapp = doc.data().whatsapp;
+                    document.getElementById('adminWhatsappInput').value = adminWhatsapp;
+                }
             });
+        });
+
+        // 1. دالة جلب الفئات وعرضها في القائمة الجانبية
+        // جلب الفئات وتحديث كل القوائم (لوحة التحكم + القائمة الجانبية + صندوق الإضافة)
+        onSnapshot(collection(db, "categories"), (snapshot) => {
+            const adminList = document.getElementById('adminCategoriesList'); // قائمة لوحة التحكم
+            const sideCats = document.getElementById('dynamicCatsSide');     // قائمة الجانب
+            const catSelect = document.getElementById('cat');                 // صندوق اختيار إضافة سيارة
+
+            // تحويل البيانات لمصفوفة
+            const categories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // 1. تحديث قائمة لوحة التحكم (Admin Dashboard)
+            if (adminList) {
+                if (categories.length === 0) {
+                    adminList.innerHTML = '<p class="text-gray-500 text-xs text-center">لا توجد فئات حالياً</p>';
+                } else {
+                    adminList.innerHTML = categories.map(cat => `
+                <div class="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/10 mb-2">
+                    <span class="font-bold text-white">${cat.name}</span>
+                    <button onclick="window.deleteCategory('${cat.id}')" class="text-red-500 hover:bg-red-500/10 p-2 rounded-lg transition">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            `).join('');
+                }
+            }
+
+            // 2. تحديث قائمة التصنيفات في القائمة الجانبية (Side Menu)
+            if (sideCats) {
+                sideCats.innerHTML = categories.map(cat => `
+            <button onclick="window.filterFromMenu('${cat.name}')" class="text-right text-white text-lg py-3 px-4 hover:bg-yellow-500/20 hover:text-yellow-400 rounded-xl transition-all border-b border-white/5">
+                <i class="fas fa-chevron-left ml-2 text-xs text-yellow-500"></i> ${cat.name}
+            </button>
+        `).join('');
+            }
+
+            // 3. تحديث صندوق الاختيار عند إضافة سيارة (Select Box)
+            if (catSelect) {
+                catSelect.innerHTML = categories.map(cat => `
+            <option value="${cat.name}">${cat.name}</option>
+        `).join('');
+            }
+        });
+        // 2. دالة الدخول للوحة التحكم بالباسورد
+        window.accessAdminDashboard = () => {
+            const pass = prompt("الرجاء إدخال كلمة سر المسؤول للدخول:");
+            if (pass === "123456vdlhs@") {
+                // إذا كان الباسورد صح، نفتح لوحة التحكم
+                if (typeof window.toggleDashboard === "function") {
+                    window.toggleDashboard();
+                    // نغلق القائمة الجانبية لكي تظهر لوحة التحكم بوضوح
+                    if (typeof closeMenu === "function") closeMenu();
+                } else {
+                    alert("حدث خطأ: دالة لوحة التحكم غير معرفة");
+                }
+            } else {
+                alert("كلمة السر خاطئة! لا يمكنك الدخول.");
+            }
+        };
+
+        onSnapshot(collection(db, "cars"), (snapshot) => {
+            allCars = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderCars(allCars);
+            document.getElementById('totalCarsCount').innerText = allCars.length;
+            renderAdminCars();
+        });
+
+        // --- العرض (Rendering) ---
+
+        function renderCategories() {
+            // تحديد العناصر
+            const container = document.getElementById('categoriesContainer');
+            const sideList = document.getElementById('sideCatsList');
+            const adminList = document.getElementById('adminCategoriesList');
+            const select = document.getElementById('carCategory');
+
+            // التأكد من وجود العنصر قبل استخدامه لمنع خطأ الـ null
+            if (container) {
+                container.innerHTML = `<div class="glass-card flex-shrink-0 px-6 py-3 cursor-pointer bg-yellow-500 text-black" onclick="filterCars('الكل')">الكل</div>` +
+                    categories.map(cat => `
+            <div class="glass-card flex-shrink-0 px-6 py-3 cursor-pointer hover:bg-yellow-500 hover:text-black transition" onclick="filterCars('${cat.name}')">
+                ${cat.name}
+            </div>
+        `).join('');
+            }
+
+            if (sideList) {
+                sideList.innerHTML = categories.map(cat => `
+            <button onclick="window.filterFromMenu('${cat.name}')" class="text-right text-white text-lg py-2 hover:text-yellow-400 transition border-b border-white/5">
+                <i class="fas fa-chevron-left ml-2 text-xs"></i> ${cat.name}
+            </button>
+        `).join('');
+            }
+
+            if (adminList) {
+                adminList.innerHTML = categories.map(cat => `
+            <div class="flex justify-between items-center bg-white/5 p-2 rounded mb-2">
+                <span>${cat.name}</span>
+                <button onclick="deleteCategory('${cat.id}')" class="text-red-500"><i class="fas fa-trash"></i></button>
+            </div>
+        `).join('');
+            }
+
+            if (select) {
+                select.innerHTML = categories.map(cat => `<option value="${cat.name}">${cat.name}</option>`).join('');
+            }
         }
+
+        window.renderCars = (list) => {
+            const grid = document.getElementById('mainGrid');
+            grid.innerHTML = list.map(car => `
+                <div class="glass-card car-card p-4 fade-in" onclick="openDetails('${car.id}')">
+                    <img src="${car.imageUrl}" onerror="this.src='https://via.placeholder.com/400x250?text=No+Image'" class="w-full h-[200px] object-cover rounded-xl mb-4">
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-xl font-bold">${car.title}</h3>
+                        <span class="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded">${car.sellerType}</span>
+                    </div>
+                    <p class="text-yellow-400 font-bold text-2xl mt-2">${car.price} ريال</p>
+                    <div class="flex justify-between text-sm text-gray-400 mt-4 pt-4 border-t border-white/10">
+                        <span><i class="fas fa-calendar-alt ml-1"></i> ${car.year}</span>
+                        <span><i class="fas fa-map-marker-alt ml-1"></i> ${car.location}</span>
+                    </div>
+                </div>
+            `).join('');
+        };
+
+        // --- إدارة السيارات والفئات ---
+
+        window.addCategory = async () => {
+            const name = document.getElementById('newCatName').value;
+            if (!name) return;
+            await addDoc(collection(db, "categories"), { name });
+            document.getElementById('newCatName').value = '';
+        };
+
+        window.deleteCategory = async (id) => {
+            if (confirm("هل أنت متأكد من حذف هذه الفئة؟ سيتم حذفها من جميع القوائم.")) {
+                try {
+                    await deleteDoc(doc(db, "categories", id));
+                    alert("تم حذف الفئة بنجاح");
+                } catch (error) {
+                    alert("حدث خطأ أثناء الحذف: " + error.message);
+                }
+            }
+        };
+
+        window.saveSettings = async () => {
+            const num = document.getElementById('adminWhatsappInput').value;
+            await setDoc(doc(db, "settings", "contact"), { whatsapp: num });
+            alert("تم تحديث رقم الواتساب بنجاح!");
+        };
+
+        document.getElementById('carForm').onsubmit = async (e) => {
+            e.preventDefault();
+
+            const carId = document.getElementById('editId').value;
+            const carData = {
+                title: document.getElementById('title').value,
+                price: document.getElementById('price').value,
+                year: document.getElementById('year').value,
+                km: document.getElementById('km').value,
+                loc: document.getElementById('loc').value,
+                cat: document.getElementById('cat').value,
+                img: document.getElementById('img').value,
+                updatedAt: new Date()
+            };
+
+            try {
+                if (carId) {
+                    // حالة التعديل: تحديث المستند الموجود
+                    await updateDoc(doc(db, "cars", carId), carData);
+                    alert("تم تحديث بيانات السيارة بنجاح");
+                } else {
+                    // حالة الإضافة: إضافة مستند جديد
+                    carData.createdAt = new Date();
+                    await addDoc(collection(db, "cars"), carData);
+                    alert("تم إضافة السيارة الجديدة بنجاح");
+                }
+
+                document.getElementById('carModal').classList.add('hidden'); // إغلاق النافذة
+            } catch (error) {
+                console.error("حدث خطأ أثناء الحفظ:", error);
+                alert("فشل الحفظ، تأكد من صلاحيات Firebase");
+            }
+        };
+
+        window.deleteCar = async (id) => {
+            if (confirm("حذف هذه السيارة نهائياً؟")) await deleteDoc(doc(db, "cars", id));
+        };
+
+        window.editCar = (id) => {
+            verifyAdminAction(() => {
+                const car = allCars.find(x => x.id === id); // البحث عن السيارة في القائمة المحلية
+
+                // تعبئة الحقول بالبيانات الموجودة
+                document.getElementById('editId').value = car.id;
+                document.getElementById('title').value = car.title;
+                document.getElementById('price').value = car.price;
+                document.getElementById('year').value = car.year;
+                document.getElementById('km').value = car.km;
+                document.getElementById('loc').value = car.loc;
+                document.getElementById('cat').value = car.cat;
+                document.getElementById('img').value = car.img;
+
+                document.getElementById('modalTitle').innerText = "تعديل بيانات السيارة";
+                document.getElementById('carModal').classList.remove('hidden');
+            });
+        };
+
+        // --- نظام الطلبات والسلة ---
+
+        window.openDetails = (id) => {
+            currentCar = allCars.find(c => c.id === id);
+            const content = document.getElementById('detailsContent');
+            content.innerHTML = `
+                <div>
+                    <img src="${currentCar.imageUrl}" class="w-full rounded-2xl shadow-2xl">
+                </div>
+                <div class="flex flex-col justify-center">
+                    <h2 class="text-4xl font-bold mb-4">${currentCar.title}</h2>
+                    <p class="text-3xl text-yellow-500 font-bold mb-6">${currentCar.price} ريال</p>
+                    <div class="grid grid-cols-2 gap-4 text-gray-300 mb-8">
+                        <div class="bg-white/5 p-3 rounded-lg">📍 الموقع: ${currentCar.location}</div>
+                        <div class="bg-white/5 p-3 rounded-lg">📅 الموديل: ${currentCar.year}</div>
+                        <div class="bg-white/5 p-3 rounded-lg">🛣️ الممشى: ${currentCar.km} كم</div>
+                        <div class="bg-white/5 p-3 rounded-lg">👤 البائع: ${currentCar.sellerType}</div>
+                    </div>
+                    <button onclick="openCart()" class="w-full bg-green-600 hover:bg-green-700 py-4 rounded-2xl font-bold text-xl shadow-lg transition-all">
+                        <i class="fab fa-whatsapp ml-2"></i> اطلب الآن عبر واتساب
+                    </button>
+                </div>
+            `;
+            document.getElementById('productDetailsModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        };
+
+        document.getElementById('orderForm').onsubmit = (e) => {
+            e.preventDefault();
+            const name = document.getElementById('custName').value;
+            const phone = document.getElementById('custPhone').value;
+            const gov = document.getElementById('custGov').value;
+            const address = document.getElementById('custAddress').value;
+
+            const text = `*طلب شراء سيارة جديد*%0A` +
+                `--------------------------%0A` +
+                `*السيارة:* ${currentCar.title}%0A` +
+                `*السعر:* ${currentCar.price} ريال%0A` +
+                `--------------------------%0A` +
+                `*بيانات العميل:*%0A` +
+                `*الاسم:* ${name}%0A` +
+                `*الهاتف:* ${phone}%0A` +
+                `*المحافظة:* ${gov}%0A` +
+                `*العنوان:* ${address}`;
+
+            window.open(`https://wa.me/${adminWhatsapp}?text=${text}`, '_blank');
+
+            // تفريغ السلة والعودة
+            document.getElementById('orderForm').reset();
+            closeCart();
+            closeDetails();
+            alert("تم إرسال طلبك بنجاح! سنقوم بالتواصل معك.");
+        };
+
+        // --- التحكم في النوافذ (UI) ---
+
+        window.toggleMenu = () => document.getElementById('sideMenu').classList.toggle('open');
+
+        window.openAdminLogin = () => {
+            const pass = prompt("أدخل كلمة مرور المسؤول:");
+            if (pass === "123456vdlhs@") {
+                document.body.classList.add('admin-mode');
+                isAdmin = true;
+                toggleDashboard();
+            } else {
+                alert("كلمة مرور خاطئة!");
+            }
+        };
+
+        window.toggleDashboard = () => document.getElementById('dashboardModal').classList.toggle('hidden');
+        window.closeDetails = () => {
+            document.getElementById('productDetailsModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        };
+        window.openCart = () => document.getElementById('cartModal').classList.remove('hidden');
+        window.closeCart = () => document.getElementById('cartModal').classList.add('hidden');
+
+        window.openAddCarModal = () => {
+            // التأكد من الباسورد أولاً
+            window.verifyAdminAction(() => {
+                const form = document.getElementById('carForm');
+                const editIdField = document.getElementById('editId');
+                const modalTitle = document.getElementById('modalTitle');
+                const modal = document.getElementById('carModal');
+
+                // 1. تفريغ النموذج
+                if (form) form.reset();
+
+                // 2. تصفير الـ ID المخفي (للتأكد أنها إضافة وليست تعديل)
+                if (editIdField) {
+                    editIdField.value = "";
+                } else {
+                    console.error("خطأ: لم يتم العثور على عنصر باسم editId في الـ HTML");
+                }
+
+                // 3. تحديث العنوان وإظهار النافذة
+                if (modalTitle) modalTitle.innerText = "إضافة سيارة جديدة";
+                if (modal) modal.classList.remove('hidden');
+            });
+        };
+        window.closeAddCarModal = () => document.getElementById('carModal').classList.add('hidden');
+
+        window.filterCars = (cat) => {
+            if (cat === 'الكل') renderCars(allCars);
+            else renderCars(allCars.filter(c => c.category === cat));
+            if (window.innerWidth < 768) toggleMenu();
+        };
+
+        const SECRET_KEY = "123456vdlhs@";
+
+        // وظيفة وسيطة للتحقق قبل تنفيذ أي أمر إداري
+        window.verifyAdminAction = (action) => {
+            // إذا كان مسجلاً دخوله كأدمن بفايربيس تخطى الباسورد، وإلا اطلبه
+            if (isAdmin) return action();
+
+            const pass = prompt("الرجاء إدخال كلمة سر الإدارة:");
+            if (pass === SECRET_KEY) {
+                action();
+            } else {
+                alert("كلمة السر خاطئة! لا يمكنك القيام بهذا الإجراء.");
+            }
+        };
+
+        function renderAdminCars() {
+            const table = document.getElementById('adminCarsTable');
+            table.innerHTML = allCars.map(car => `
+                <tr class="border-b border-white/5 hover:bg-white/5">
+                    <td class="p-4"><img src="${car.imageUrl}" class="w-12 h-12 rounded object-cover"></td>
+                    <td class="p-4">${car.title}</td>
+                    <td class="p-4">${car.price}</td>
+                    <td class="p-4">${car.category}</td>
+                    <td class="p-4">
+                        <button onclick="editCar('${car.id}')" class="text-blue-400 ml-3"><i class="fas fa-edit"></i></button>
+                        <button onclick="deleteCar('${car.id}')" class="text-red-400"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        document.getElementById('mainSearch').addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            renderCars(allCars.filter(c => c.title.toLowerCase().includes(term)));
+        });
+
+        let isAdmin = false;
     </script>
 </body>
 
