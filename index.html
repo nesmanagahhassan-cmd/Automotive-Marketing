@@ -89,12 +89,28 @@
             border-radius: 10px;
         }
 
+        /* خلفية التعتيم يجب أن تكون تحت القائمة وفوق المحتوى */
+        #menuOverlay {
+            z-index: 9998 !important;
+        }
+
+        /* زر إغلاق القائمة يجب أن يكون كبير وسهل الضغط */
+        #closeMenuBtn {
+            padding: 10px;
+            margin-right: -10px;
+        }
+
         /* تحسين شكل شريط التمرير داخل القائمة الجانبية */
         #sideMenuContainer::-webkit-scrollbar {
             width: 4px;
             scrollbar-width: thin;
             scrollbar-color: #eab308 rgba(255, 255, 255, 0.05);
             /* عرض السكرول */
+            width: 85% !important;
+            /* تأخذ مساحة أكبر على الموبايل لسهولة الاستخدام */
+            max-width: 320px;
+            z-index: 9999 !important;
+            /* التأكد أنها فوق الهيدر */
         }
 
         #sideMenuContainer::-webkit-scrollbar-track {
@@ -581,15 +597,17 @@
 
         // 1. دالة جلب الفئات وعرضها في القائمة الجانبية
         // جلب الفئات وتحديث كل القوائم (لوحة التحكم + القائمة الجانبية + صندوق الإضافة)
+        // جلب الفئات وتحديث كل الواجهات (لوحة التحكم + القائمة الجانبية + صندوق الإضافة)
         onSnapshot(collection(db, "categories"), (snapshot) => {
+            // 1. تعريف العناصر
             const adminList = document.getElementById('adminCategoriesList'); // قائمة لوحة التحكم
             const sideCats = document.getElementById('dynamicCatsSide');     // قائمة الجانب
             const catSelect = document.getElementById('cat');                 // صندوق اختيار إضافة سيارة
 
-            // تحويل البيانات لمصفوفة
+            // 2. تحويل البيانات لمصفوفة
             const categories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            // 1. تحديث قائمة لوحة التحكم (Admin Dashboard)
+            // --- تحديث قائمة لوحة التحكم (Admin Dashboard) ---
             if (adminList) {
                 if (categories.length === 0) {
                     adminList.innerHTML = '<p class="text-gray-500 text-xs text-center">لا توجد فئات حالياً</p>';
@@ -605,20 +623,37 @@
                 }
             }
 
-            // 2. تحديث قائمة التصنيفات في القائمة الجانبية (Side Menu)
+            // --- تحديث قائمة التصنيفات في القائمة الجانبية (Side Menu) ---
             if (sideCats) {
-                sideCats.innerHTML = categories.map(cat => `
-            <button onclick="window.filterFromMenu('${cat.name}')" class="text-right text-white text-lg py-3 px-4 hover:bg-yellow-500/20 hover:text-yellow-400 rounded-xl transition-all border-b border-white/5">
-                <i class="fas fa-chevron-left ml-2 text-xs text-yellow-500"></i> ${cat.name}
-            </button>
-        `).join('');
+                if (categories.length === 0) {
+                    sideCats.innerHTML = '<p class="text-gray-500 text-xs text-center">لا توجد فئات</p>';
+                } else {
+                    sideCats.innerHTML = categories.map(cat => `
+                <button onclick="window.filterFromMenu('${cat.name}')" 
+                    class="text-right text-white text-lg py-3 px-4 hover:bg-yellow-500/20 hover:text-yellow-400 rounded-xl transition-all border-b border-white/5">
+                    <i class="fas fa-chevron-left ml-2 text-xs text-yellow-500"></i> ${cat.name}
+                </button>
+            `).join('');
+                }
             }
 
-            // 3. تحديث صندوق الاختيار عند إضافة سيارة (Select Box)
+            // --- تحديث صندوق الاختيار عند إضافة سيارة (Select Box) ---
             if (catSelect) {
-                catSelect.innerHTML = categories.map(cat => `
-            <option value="${cat.name}">${cat.name}</option>
-        `).join('');
+                if (categories.length === 0) {
+                    catSelect.innerHTML = '<option value="">لا توجد فئات</option>';
+                } else {
+                    catSelect.innerHTML = categories.map(cat => `
+                <option value="${cat.name}">${cat.name}</option>
+            `).join('');
+                }
+            }
+
+        }, (error) => {
+            // معالجة الخطأ في حال حدوث مشكلة في الشبكة (خاصة على الموبايل)
+            console.error("Firestore Error:", error);
+            const sideCats = document.getElementById('dynamicCatsSide');
+            if (sideCats) {
+                sideCats.innerHTML = '<p class="text-red-500 text-xs text-center">فشل تحميل البيانات، تأكد من الاتصال</p>';
             }
         });
         // 2. دالة الدخول للوحة التحكم بالباسورد
